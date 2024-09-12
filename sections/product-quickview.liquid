@@ -1,0 +1,183 @@
+{% liquid
+  assign product_form_id = 'product-form-' | append: section.id
+
+  assign first_3d_model = product.media | where: 'media_type', 'model' | first
+  assign subtitle = product.metafields.descriptors.subtitle
+%}
+
+<modal-dialog id="QuickView-Modal" class="f-modal f-modal-quickview" style="--modal-width: 980px">
+  <product-recently-viewed data-product-id="{{ product.id }}" class="f:hidden"></product-recently-viewed>
+  <div class="f-modal__content" role="dialog" aria-label="Quick view" aria-modal="true" tabindex="-1">
+    <div class="f-modal__inner scroll-container">
+      <button
+        id="ModalClose-QuickView"
+        type="button"
+        class="f-modal__close"
+        aria-label="{{ 'accessibility.close' | t }}"
+      >
+        {% render 'icon-close' %}
+      </button>
+      <div data-section-id="{{ section.id }}">
+        <div class="f-product-quickview flex flex-wrap">
+          {% if product.images.size > 0 %}
+            <div class="f-product-quickview__media w-full">
+              {% render 'product-media',
+                product: product,
+                section: section,
+                show_featured_media: settings.qv_show_featured_media
+              %}
+            </div>
+          {% endif %}
+          <div class="f-product-quickview__summary w-full">
+            <div class="f-product-single__blocks">
+              {% if settings.qv_show_custom_tag %}
+                <div class="f-product-single__block f-product-single__block--badge">
+                  {%- liquid
+                    assign has_tags = false
+                    for tag in product.tags
+                      if tag contains 'tag__'
+                        assign has_tags = true
+                      endif
+                    endfor
+                  -%}
+                  {%- if has_tags -%}
+                    <div class="f-product__tags">
+                      {% for tag in product.tags %}
+                        {% if tag contains 'tag__' %}
+                          {%- liquid
+                            assign tag_content = tag | split: '__' | last
+                            assign type = tag_content | split: '_' | first
+                            assign tag_name = tag_content | split: '_' | last
+                          -%}
+                          <span class="f-badge f-badge--{{ type }}">
+                            {{ tag_name }}
+                          </span>
+                        {% endif %}
+                      {% endfor %}
+                    </div>
+                  {%- endif -%}
+                </div>
+              {% endif %}
+              <div class="f-product-single__block f-product-single__block--title">
+                {% if settings.qv_show_vendor %}
+                  <p class="f-product__vendor text-upper text-subtext">
+                    {{ product.vendor }}
+                  </p>
+                {% endif %}
+                <h2 class="f-product-single__title h2">
+                  {{ product.title | escape }}
+                </h2>
+              </div>
+              <div class="f-product-single__block f-product-single__block--price">
+                <div id="f-product-price-{{ section.id }}" role="status">
+                  {%- render 'price',
+                    product: product,
+                    use_variant: true,
+                    show_sale_badge: settings.qv_show_sale_badge,
+                    sale_badge_type: settings.qv_sale_badge_type,
+                    show_soldout_badge: settings.qv_show_soldout_badge,
+                    price_class: 'f-price--large text-lg sm:text-xl'
+                  -%}
+                </div>
+                {%- if shop.taxes_included -%}
+                  <div class="f-product-single__block-tax text-subtext">
+                    {{- 'products.product.include_taxes' | t -}}
+                  </div>
+                {%- endif -%}
+              </div>
+              {% unless subtitle == blank %}
+                <div class="f-product-single__block f-product-single__block--subtitle">
+                  <div class="rte">{{ subtitle }}</div>
+                  <a href="{{ product.url }}" class="btn btn-view-details btn--underline btn--with-icon"
+                    ><span>{{- 'products.product.view_full_details' | t -}}</span> {% render 'icon-arrow-right' -%}
+                  </a>
+                </div>
+              {% endunless %}
+              <div class="f-product-single__block f-product-single__block--variant_picker">
+                {% render 'variant-picker',
+                  color_schema: 'background-1',
+                  product: product,
+                  show_size_chart: true,
+                  update_browser_history: false,
+                  show_selected_value: true
+                %}
+              </div>
+              {% if settings.qv_show_quantity_selector %}
+                <div class="f-product-single__block f-product-single__block--quantity_selector">
+                  <div class="f-product-single__info-quantity">
+                    {% render 'quantity-input',
+                      section_id: section.id,
+                      form_id: product_form_id,
+                      min: 1,
+                      product_title: product.title,
+                      show_label: true
+                    %}
+                  </div>
+                </div>
+              {% endif %}
+              <div class="f-product-single__block f-product-single__block--buy_buttons">
+                <product-form class="f-product-form">
+                  {%- form 'product',
+                    product,
+                    id: product_form_id,
+                    class: 'quickview-product-form',
+                    novalidate: 'novalidate',
+                    data-type: 'add-to-cart-form'
+                  -%}
+                    <input
+                      type="hidden"
+                      name="id"
+                      value="{{ product.selected_or_first_available_variant.id }}"
+                      disabled
+                    >
+                    <div class="f-product-form__buttons f-product-form__buttons--show-buynow">
+                      <button
+                        type="submit"
+                        name="add"
+                        class="f-product-form__submit btn{% if settings.qv_show_dynamic_checkout_button %} btn--secondary{% else %} btn--primary{% endif %}"
+                        {% if product.selected_or_first_available_variant.available == false %}
+                          disabled
+                        {% endif %}
+                      >
+                        <span>
+                          {%- if product.selected_or_first_available_variant.available -%}
+                            {{ 'products.product.add_to_cart' | t }}
+                          {%- else -%}
+                            {{ 'products.product.sold_out' | t }}
+                          {%- endif -%}
+                        </span>
+                        {% render 'icon-spinner' %}
+                      </button>
+                      {% if settings.qv_show_dynamic_checkout_button %}
+                        <div class="f-product-form__button-dynamic">
+                          {{ form | payment_button }}
+                        </div>
+                      {% endif %}
+                      <div class="f-product-form__error-message-wrapper" role="alert"></div>
+                    </div>
+                  {%- endform -%}
+                </product-form>
+              </div>
+              {% if subtitle == blank %}
+                <div class="f-product-single__block f-product-single__block--view-details">
+                  <a href="{{ product.url }}" class="btn btn--underline btn-view-details btn--with-icon"
+                    ><span>{{- 'products.product.view_full_details' | t -}}</span>
+                    <svg width="16" height="17" viewBox="0 0 16 17" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path d="M2.5 8.50391H13.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                      <path d="M9 4.00391L13.5 8.50391L9 13.0039" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                  </a>
+                </div>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</modal-dialog>
+{%- if first_3d_model -%}
+  <script type="application/json" id="ModelJSON-{{ product.id }}">
+    {{ product.media | where: 'media_type', 'model' | json }}
+  </script>
+{%- endif -%}

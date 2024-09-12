@@ -1,0 +1,248 @@
+{% liquid
+  assign is_size = false
+  assign size_title_downcase = size_title | downcase
+  assign variant_picker_type = picker_type
+
+  assign enableVariantGroupImg = false
+  if product.metafields['foxecom-bs-kit']['variant-images'].value.enable
+    assign enableVariantGroupImg = true
+  endif
+%}
+
+{%- capture size_chart_button -%}
+    <modal-opener class="open-size-chart no-js-hidden" data-modal="#PopupModal-SizeChart-{{ section.id }}">
+        <button class="btn--link text-sm" aria-label="{{ 'products.product.open_size_chart' | t }}">
+            <span>{{ 'products.product.open_size_chart' | t }}</span>
+        </button>
+    </modal-opener>
+{%- endcapture -%}
+<div
+  class="variant-picker"
+  data-variant-picker
+  data-product-id="{{ product.id }}"
+  data-enable-variant-group-images="{{ enableVariantGroupImg }}"
+  data-disable-default-variant="{{ disable_default_variant }}"
+  data-variant-option-none-text="{{ 'products.product.variant_option_none_text' | t }}"
+  data-variant-selection-needed-text="{{ 'products.product.variant_selection_needed_text' | t }}"
+  data-section="{{ section.id }}"
+  data-product-handle="{{ product.handle }}"
+  data-product-url="{{ product.url }}"
+  data-max-options="{{ product.options_with_values.size }}"
+>
+  {%- unless product.has_only_default_variant -%}
+    <variant-picker class="no-js-hidden" data-update-url="{{ update_browser_history }}">
+      {%- for option in product.options_with_values -%}
+        {% liquid
+          assign option_label = option.name
+          assign option_name_downcase = option.name | downcase
+          if size_title_downcase contains option_name_downcase
+            assign is_size = true
+          else
+            assign is_size = false
+          endif
+          if settings.color_swatches_enable and settings.color_swatches_trigger != blank
+            assign color_swatches_trigger = settings.color_swatches_trigger | downcase | split: ','
+            assign has_color = color_swatches_trigger | where: option_name_downcase | first
+            if has_color != blank
+              assign variant_picker_type = 'color'
+            else
+              assign variant_picker_type = picker_type
+            endif
+          endif
+        %}
+        <div class="variant-picker__field-wrapper">
+          {% case variant_picker_type %}
+            {% when 'dropdown' %}
+              <variant-select
+                class="variant-picker__field"
+                data-picker-field="select"
+                data-option-name="{{ option.name }}"
+                data-selected-value="{{ option.selected_value }}"
+              >
+                <div class="variant-picker__input variant-picker__input--dropdown">
+                  <label class="form-label" for="Option-{{ section.id }}-{{ forloop.index0 }}">
+                    <span class="font-body-bolder">{{ option_label }}:</span>
+                    {% if show_selected_value %}
+                      <span class="selected-value">{{ option.selected_value }}</span>
+                    {% endif %}
+                  </label>
+                  <select
+                    id="Option-{{ section.id }}-{{ forloop.index0 }}"
+                    class="form-control"
+                    name="options[{{ option.name | escape }}]"
+                    form="{{ product_form_id }}"
+                  >
+                    {%- for value in option.values -%}
+                      <option
+                        value="{{ value | escape }}"
+                        class="variant-picker__option"
+                        data-value="{{- value | escape -}}"
+                        data-option-position="{{ option.position }}"
+                        {% if option.selected_value == value %}
+                          selected="selected"
+                        {% endif %}
+                      >
+                        {{- value -}}
+                      </option>
+                    {%- endfor -%}
+                  </select>
+                </div>
+              </variant-select>
+            {% when 'color' %}
+              <variant-color
+                class="variant-picker__field"
+                data-picker-field="radio"
+                data-option-name="{{ option.name }}"
+                data-selected-value="{{ option.selected_value }}"
+              >
+                <div class="js variant-picker__input variant-picker__color">
+                  <label class="form__label">
+                    <span class="font-body-bolder">{{ option_label }}:</span>
+                    {% if show_selected_value %}
+                      <span class="selected-value">{{ option.selected_value }}</span>
+                    {% endif %}
+                  </label>
+                  <div class="variant-picker__option-values">
+                    {%- for value in option.values -%}
+                      {% liquid
+                        assign img_file_name = value | handle | append: '.png'
+                        assign image_url = img_file_name | file_img_url: '60x60' | prepend: 'https:' | split: '?' | first
+                        assign value_fallback = value | split: ' ' | last | handle
+                      %}
+                      <div
+                        class="variant-picker__option"
+                        data-option-position="{{ option.position }}"
+                        data-option-type="{{ variant_picker_type }}"
+                        data-value="{{- value | escape -}}"
+                        data-fallback-value="{{- value_fallback | downcase -}}"
+                        data-has-custom-image="{% if images[img_file_name] != blank %}true{% else %}false{% endif %}"
+                        data-tippy-theme="color-{{ color_schema }}"
+                        data-tippy-content="{{ value }}"
+                        data-tippy-placement="top"
+                      >
+                        <input
+                          type="radio"
+                          id="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+                          name="{{ option.name }}"
+                          value="{{ value | escape }}"
+                          form="{{ product_form_id }}"
+                          {% if option.selected_value == value %}
+                            checked
+                          {% endif %}
+                        >
+                        <label
+                          for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+                          class="variant-picker__option-button variant-picker__option-button--{{ variant_picker_type }}"
+                          {% if images[img_file_name] != blank %}
+                            style="background-image: url({{ image_url }});"
+                          {% endif %}
+                        >
+                          {{- value -}}
+                        </label>
+                      </div>
+                    {%- endfor -%}
+                  </div>
+                </div>
+              </variant-color>
+            {% else %}
+              <variant-button
+                class="variant-picker__field"
+                data-picker-field="radio"
+                data-option-name="{{ option.name }}"
+                data-selected-value="{{ option.selected_value }}"
+              >
+                <div class="js variant-picker__input variant-picker__button">
+                  <label class="form__label">
+                    <span class="font-body-bolder">{{ option_label }}:</span>
+                    {% if show_selected_value %}
+                      <span class="selected-value">{{ option.selected_value }}</span>
+                    {% endif %}
+                  </label>
+                  <div class="variant-picker__option-values">
+                    {%- for value in option.values -%}
+                      <div
+                        class="variant-picker__option"
+                        data-option-position="{{ option.position }}"
+                        data-option-type="{{ variant_picker_type }}"
+                        data-value="{{- value | escape -}}"
+                      >
+                        <input
+                          type="radio"
+                          id="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+                          name="{{ option.name }}"
+                          value="{{ value | escape }}"
+                          form="{{ product_form_id }}"
+                          {% if option.selected_value == value %}
+                            checked
+                          {% endif %}
+                        >
+                        <label
+                          for="{{ section.id }}-{{ option.position }}-{{ forloop.index0 }}"
+                          class="variant-picker__option-button variant-picker__option-button--{{ variant_picker_type | default: 'button' }}"
+                        >
+                          {{- value -}}
+                        </label>
+                      </div>
+                    {%- endfor -%}
+                  </div>
+                </div>
+              </variant-button>
+          {% endcase %}
+          {%- if is_size and show_size_chart -%}
+            {{- size_chart_button -}}
+          {%- endif -%}
+          {% if is_size %}
+            <button
+              class="open-size-chart open-foxkit-sizechart btn btn--with-icon btn--plain foxkit-hidden"
+              aria-label="{{ 'products.product.open_size_chart' | t }}"
+            >
+              <span
+                ><u>{{ 'products.product.open_size_chart' | t }}</u></span
+              >
+            </button>
+          {% endif %}
+        </div>
+      {%- endfor -%}
+    </variant-picker>
+    <script type="application/json">
+      {{ product.variants | json }}
+    </script>
+    {%- if enableVariantGroupImg -%}
+      <script id="variantGroup" type="application/json">
+        {{ product.metafields.foxecom-bs-kit.variant-images.value | json }}
+      </script>
+    {%- endif -%}
+  {%- endunless -%}
+  <noscript class="variant-picker__noscript-wrapper-{{ section.id }}">
+    <div class="form-field variant-picker__input{% if product.has_only_default_variant %} hidden{% endif %}">
+      <label
+        class="form-label"
+        for="Variants-{{ section.id }}"
+      >
+        {{- 'products.product.product_variants' | t -}}
+      </label>
+      <select
+        name="id"
+        id="Variants-{{ section.id }}"
+        class="form-control"
+        form="{{ product_form_id }}"
+      >
+        {%- for variant in product.variants -%}
+          <option
+            {% if variant == product.selected_or_first_available_variant %}
+              selected="selected"
+            {% endif %}
+            {% if variant.available == false %}
+              disabled
+            {% endif %}
+            value="{{ variant.id }}"
+          >
+            {{ variant.title }}
+            {%- if variant.available == false %} - {{ 'products.product.sold_out' | t }}{% endif %}
+            - {{ variant.price | money | strip_html }}
+          </option>
+        {%- endfor -%}
+      </select>
+    </div>
+  </noscript>
+</div>

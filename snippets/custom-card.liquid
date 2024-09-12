@@ -1,0 +1,67 @@
+{%- liquid
+  assign content_info_alignment = ''
+  assign card_postion = content_position
+  assign text_alignment = ''
+  if content_position contains 'left'
+    assign text_alignment = 'text-left'
+  elsif content_position contains 'right'
+    assign text_alignment = 'text-right'
+  else 
+    assign text_alignment = 'text-center'
+  endif
+  case content_position
+    when 'left'
+     assign content_info_alignment = 'items-start'
+    when 'below-center'
+     assign content_info_alignment = 'items-center'
+    when 'right'
+     assign content_info_alignment = 'items-end'
+    when 'left-top'
+     assign content_info_alignment = 'items-start justify-start'
+    when 'right-top'
+     assign content_info_alignment = 'items-end justify-start'
+    when 'center-top'
+     assign content_info_alignment = 'items-center justify-start'
+    when 'left-middle'
+     assign content_info_alignment = 'items-start justify-center'
+    when 'right-middle'
+     assign content_info_alignment = 'items-end justify-center'
+    when 'center'
+     assign content_info_alignment = 'items-center justify-center'
+    when 'center-bottom'
+     assign content_info_alignment = 'items-center justify-end'
+    when 'right-bottom'
+     assign content_info_alignment = 'items-end justify-end'
+    when 'left-bottom'
+     assign content_info_alignment = 'items-start justify-end'
+  endcase
+  if content_position == 'left' or content_position == 'below-center' or content_position == 'right'
+    assign card_postion = 'below'  
+  else 
+    assign card_postion = 'inside'
+  endif
+  -%}
+<div class="f-column">
+  <div class="f-custom-card f-custom-card--{{ card_postion }} color-{{ color_scheme }} f-image-hover-effect__{{settings.image_hover_effect}}">
+    <a
+      title="{{ title | strip_html }}"
+      href="{{ link }}"
+      class="collection-card__wrapper">
+      <div class="f-custom-card__image f-card overflow-hidden">
+        {% render 'responsive-image'
+          , image: image
+          , wrapper_class: "collection-card__image"
+        %}
+      </div>
+      <div class="f-custom-card__info flex flex-col {{ content_info_alignment }} {{ text_alignment }}">
+        <h3 class="f-custom-card__heading text-current {{ heading_size }}">{{ title }}</h3>
+        {% if description != blank %}
+          <p class="f-custom-card__description">{{ description }}</p>
+        {% endif %}
+        {% if button_label != blank %}
+          <button class="btn {{ button_style }}">{{ button_label }}</button>
+        {% endif %}
+      </div>
+    </a>
+  </div>
+</div>

@@ -1,0 +1,123 @@
+{%- liquid
+  assign collection_image = blank
+  if image != blank
+    assign collection_image = image
+  else
+    if collection.image
+      assign collection_image = collection.image
+    elsif collection.products.first and collection.products.first.images != empty
+      assign collection_image = collection.products.first.featured_image
+    else
+      assign collection_image = blank
+    endif
+  endif
+
+  assign inline_count_text = ''
+
+  if inline_count
+    assign inline_count_text = 'inline-count'
+  endif
+
+  assign aspect_ratio = image_ratio | default: '1/1'
+  assign collection_title = title | default: collection.title
+  
+  assign loading = 'lazy'
+  assign fetchpriority = 'low'
+  if section.index < 2 and index == 1
+    assign loading = 'eager'
+    assign fetchpriority = 'high'
+  endif
+-%}
+<div class="f-column">
+  <div
+    class="block{% if animated %} f-scroll-trigger animate--{{ animation_effect }}{% endif %}"
+    {% if animated %}
+    data-cascade
+    style="--animation-order: {{ index }};"
+    {% endif %}>
+    <div class="collection-card collection-card--style-{{ card_style }} text-{{ text_alignment | default: 'center' }} f-image-hover-effect__{{ settings.image_hover_effect }}" style="--text-color: {{ text_color }};">
+      <div class="collection-card__image-wrapper f-card overflow-hidden">
+        <a
+          title="{{ collection.title }}"
+          href="{{ collection.url | default: "#" }}"
+          class="collection-card__wrapper"
+        >
+          {% unless collection_image == blank %}
+            {%- liquid
+              assign image_height = collection_image.width | divided_by: collection_image.aspect_ratio
+              if aspect_ratio == 'adapt'
+                assign aspect_ratio = collection_image.aspect_ratio
+              endif
+            -%}
+            <div class="f-image collection-card__image" style="--aspect-ratio: {{ aspect_ratio }};">
+              {{
+                collection_image
+                | image_url: width: 1500
+                | image_tag:
+                  loading: loading,
+                  fetchpriority: fetchpriority,
+                  width: collection_image.width,
+                  height: image_height,
+                  sizes: '50vw',
+                  widths: '375, 550, 750, 1100, 1500, 1780, 2000, 3000, 3840',
+                  alt: collection_title
+              }}
+            </div>
+          {% else %}
+            {% liquid
+              if aspect_ratio == 'adapt'
+                assign aspect_ratio = '1/1'
+              endif
+            %}
+            <div class="collection-card__image" style="--aspect-ratio: {{ aspect_ratio }}">
+              {% capture current %}{% cycle 1, 2, 3 %}{% endcapture %}
+              {{ 'collection-' | append: current | placeholder_svg_tag: 'placeholder-svg f-image' }}
+            </div>
+          {% endunless %}
+        </a>
+      </div>
+      {%- assign default_label = 'onboarding.collection_title' | t -%}
+      <div class="collection-card__info ">
+        <div class="collection-card__info--group {{ inline_count_text }}">
+          <h3 class="collection-card__title text-current {{ title_font }} {{ title_size | default: 'h6' }}">
+            {{ collection_title | default: default_label }}
+          </h3>
+          {% if show_count %}
+            {% assign product_count = collection.all_products_count | default: 2 %}
+            <div class="collection-card__number-count{% if card_style == '3' %} h6{% else %} text-subtext{% endif %}">
+              {{ 'sections.collection_list.product_count' | t: count: product_count }}
+            </div>
+          {% endif %}
+        </div>
+        {% if card_style == '4' %}
+          <a
+            href="{{ collection.url }}"
+            class="btn btn--white btn--icon justify-center items-center"
+            aria-label="{{ title | default: collection.title }}"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 16 16"
+              fill="none"
+            >
+              <path
+                d="M2.5 8H13.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round" />
+              <path
+                d="M9 3.5L13.5 8L9 12.5"
+                stroke="currentColor"
+                stroke-width="1.5"
+                stroke-linecap="round"
+                stroke-linejoin="round" />
+            </svg>
+          </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>

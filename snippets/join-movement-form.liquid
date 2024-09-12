@@ -1,0 +1,28 @@
+{% form 'contact', id: 'join-movement-form' %}
+    <input type="hidden" name="contact[from form]" value="{{ 'products.product.join_movement_form.form_title' | t }}" />
+    <input type="hidden" name="contact[product]" value="{{ product.title }}" />
+    <input type="hidden" name="contact[product url]" value="{{ shop.url }}{{ product.url }}" />
+    <div class="f-question-form">
+        <div class="text-center">
+            <h3 class="h4 font-bold">Join the Movement to Support Local Artisans</h3>
+        </div>
+        <div class="form-field">
+            <label for="ask-question-form-name" class="visually-hidden">{{ 'products.product.question_form.field_name' | t }}</label>
+            <input id="ask-question-form-name" type="text" class="form-control" name="contact[name]" required placeholder="{{ 'products.product.question_form.field_name' | t }}*">
+        </div>
+        <div class="form-field">
+            <label for="ask-question-form-email" class="visually-hidden">{{ 'products.product.question_form.field_email' | t }}</label>
+            <input id="ask-question-form-email" type="email" class="form-control" name="contact[email]" required placeholder="{{ 'products.product.question_form.field_email' | t }}*">
+        </div>
+       
+        
+        <div class="text-center ">
+            <button class="btn btn--primary btn-submit">Join</button>
+        </div>
+    </div>
+    {% if form.posted_successfully? %}
+        <p>{{ 'products.product.join_movement_form.success_message' | t }}</p>
+    {% else %}
+        {{ form.errors | default_errors }}
+    {% endif %}
+{% endform %}
